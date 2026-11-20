@@ -32,14 +32,30 @@
     router: '<rect x="3" y="13.5" width="18" height="7" rx="2"/><path d="M7 17h.01M11 17h.01"/><path d="M8.5 10.3a5 5 0 0 1 7 0M6 7.8a8.5 8.5 0 0 1 12 0"/>',
     server: '<rect x="3.5" y="3.5" width="17" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="17" height="7" rx="1.8"/><path d="M7 7h.01M7 17h.01"/>',
     game: '<path d="M7 8h10a4 4 0 0 1 4 4.2l-.6 3.6a2.3 2.3 0 0 1-4 1.2L14.5 15h-5l-1.9 2a2.3 2.3 0 0 1-4-1.2L3 12.2A4 4 0 0 1 7 8z"/><path d="M8 10.5v3M6.5 12h3M15.5 11.5h.01M17.5 13h.01"/>',
-    iot: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    iot: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 7V4M14 7V4M10 20v-3M14 20v-3M7 10H4M7 14H4M20 10h-3M20 14h-3"/>',
+    thermostat: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><circle cx="12" cy="15.3" r="1.6"/>',
+    airco: '<rect x="3" y="5" width="18" height="7" rx="2"/><path d="M7 15.5c0 1.5 1 1.5 1 3M12 15.5c0 1.5 1 1.5 1 3M17 15.5c0 1.5 1 1.5 1 3"/>',
+    heater: '<rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8.5 8v6M12 8v6M15.5 8v6M7 19.5v-2.5M17 19.5v-2.5"/>',
+    fan: '<circle cx="12" cy="12" r="1.6"/><path d="M12 10.4C12 6 14.5 4 16 5.5s-.5 4.5-4 4.9zM13.6 12c4.4 0 6.4 2.5 4.9 4s-4.500-.5-4.900-4zM12 13.6c0 4.400-2.500 6.400-4 4.900s.5-4.500 4-4.900zM10.400 12C6 12 4 9.500 5.500 8s4.500.5 4.900 4z"/>',
+    purifier: '<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M9 8h6M9 11h6M9 14h6"/>',
+    sensor: '<path d="M14 14.5V5a2 2 0 1 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 9v7"/>',
+    plug: '<path d="M9 3v4M15 3v4"/><path d="M6.5 7h11v4.5a5.5 5.5 0 0 1-11 0z"/><path d="M12 17v4"/>',
+    lamp: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2.5"/>',
+    doorbell: '<rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="9" r="1.8"/><circle cx="12" cy="16" r="1.4"/>',
+    vacuum: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.8"/><path d="M5.5 5.5l1.8 1.8"/>',
+    blinds: '<path d="M4 4h16M4 8h16M4 12h16M4 16h10"/><path d="M17 15v5"/>',
+    hub: '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5V4.5M12 14.5v5M9.5 12h-5M14.5 12h5"/><circle cx="12" cy="3.5" r="1"/><circle cx="12" cy="20.5" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="20.5" cy="12" r="1"/>',
+    smoke: '<circle cx="12" cy="12" r="9"/><path d="M8 12h8M9.5 9h5M9.5 15h5"/>',
+    solar: '<path d="M6 10h12l2.5 9h-17z"/><path d="M5 14.5h14M10 10l-.8 9M14 10l.8 9"/><path d="M12 3v2M5.500 5l1.300 1.300M18.500 5l-1.300 1.300"/>',
+    ev: '<rect x="6" y="3" width="12" height="18" rx="2.5"/><path d="M12.800 7l-2.800 5h3.500l-2.800 5"/>',
     unknown: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.7a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1.1.9-1.1 1.6M12 16.5h.01"/>',
     chev: '<path d="m6 9 6 6 6-6"/>',
     pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
   };
   const ICON_LABEL = {
     phone: 'Telefoon', tablet: 'Tablet', laptop: 'Laptop', desktop: 'Computer', tv: 'Tv', speaker: 'Speaker',
-    printer: 'Printer', camera: 'Camera', router: 'Router', server: 'Server', game: 'Spelcomputer', iot: 'Slim apparaat', unknown: 'Onbekend',
+    printer: 'Printer', camera: 'Camera', router: 'Router', server: 'Server', game: 'Spelcomputer', unknown: 'Onbekend', iot: 'Slim apparaat', thermostat: 'Thermostaat', airco: 'Airco', heater: 'Verwarming', fan: 'Ventilatie', purifier: 'Luchtreiniger', sensor: 'Sensor', plug: 'Slimme stekker', lamp: 'Lamp', lock: 'Slot', doorbell: 'Deurbel', vacuum: 'Stofzuiger', blinds: 'Rolluik', hub: 'Hub', smoke: 'Rookmelder', solar: 'Zonnepanelen', ev: 'Laadpaal',
   };
   function svg(name, cls) {
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

@@ -1,5 +1,11 @@
 # Wijzigingen
 
+## 1.1.1 (2026-11-20)
+
+- Nieuw logo: stekker met een symmetrisch oog dat over de linkerwand valt (wit met zwarte pupil in donker, zwart met witte pupil in licht). Logo's zonder achtergrond als PNG in de map logo.
+- Nieuwe iconen voor klimaat en smarthome: thermostaat, airco, verwarming, ventilatie, luchtreiniger, sensor, slimme stekker, lamp, slot, deurbel, stofzuiger, rolluik, hub, rookmelder, zonnepanelen en laadpaal. Peek kiest ze automatisch op de apparaatnaam.
+- Apple-touch-icon vernieuwd en een web-app-manifest toegevoegd (Peek als app op het beginscherm).
+
 ## 1.1.0 (2026-11-20)
 
 - Opmaak zoals MyPad: logo en titel linksboven, knoppen rechtsboven, inlogscherm in dezelfde stijl.

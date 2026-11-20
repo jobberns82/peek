@@ -16,7 +16,7 @@ const { slugFor } = require('./logos');
 const MISS_LIMIT = 2; // zo vaak gemist voordat een apparaat offline heet
 const NAME_TTL_KNOWN = 6 * 3600 * 1000;
 const NAME_TTL_UNKNOWN = 3600 * 1000;
-const VALID_ICONS = ['phone', 'tablet', 'laptop', 'desktop', 'tv', 'speaker', 'printer', 'camera', 'router', 'server', 'game', 'iot', 'unknown'];
+const VALID_ICONS = ['phone', 'tablet', 'laptop', 'desktop', 'tv', 'speaker', 'printer', 'camera', 'router', 'server', 'game', 'iot', 'thermostat', 'airco', 'heater', 'fan', 'purifier', 'sensor', 'plug', 'lamp', 'lock', 'doorbell', 'vacuum', 'blinds', 'hub', 'smoke', 'solar', 'ev', 'unknown'];
 const INTERVALS = [0, 1, 5, 15, 30, 60];
 
 function createScanner({ store, oui, env, demo }) {

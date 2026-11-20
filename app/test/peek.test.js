@@ -350,7 +350,7 @@ test('server: fabrikantlogo via eigen route, achter de login', async (t) => {
 
   assert.equal((await fetch(base + '/api/vendor-logo/apple.svg')).status, 401, 'zonder login geen logo');
   const v = await (await fetch(base + '/api/version')).json();
-  assert.equal(v.version, '1.1.0', 'versie is zonder login te zien (inlogscherm)');
+  assert.equal(v.version, '1.1.1', 'versie is zonder login te zien (inlogscherm)');
 
   const ok = await fetch(base + '/api/login', { method: 'POST', headers: J, body: JSON.stringify({ user: 'job', password: 'test-wachtwoord' }) });
   const C = { Cookie: ok.headers.get('set-cookie').split(';')[0] };
@@ -389,4 +389,19 @@ test('server start niet zonder wachtwoord', async () => {
   });
   const code = await new Promise((r) => child.on('exit', r));
   assert.equal(code, 1);
+});
+
+test('icoon: slimme apparaten en klimaat worden herkend op naam', () => {
+  const ic = (...p) => names.iconFromText(...p);
+  assert.equal(ic('Tado-Thermostaat'), 'thermostat');
+  assert.equal(ic('Daikin-Living-room'), 'airco');
+  assert.equal(ic('Itho-WTW'), 'fan');
+  assert.equal(ic('Philips-hue', 'Hue bridge'), 'hub');
+  assert.equal(ic('Shelly-plug-S'), 'plug');
+  assert.equal(ic('Aqara-temperatuur'), 'sensor');
+  assert.equal(ic('Roborock-S7'), 'vacuum');
+  assert.equal(ic('Ring-Doorbell'), 'doorbell');
+  assert.equal(ic('iPad-van-Kind'), 'tablet');
+  assert.equal(ic('MacBook-Pro'), 'laptop');
+  assert.equal(ic('Samsung-TV'), 'tv');
 });

@@ -10,7 +10,7 @@ const { createScanner } = require('./lib/scanner');
 const { createLogos } = require('./lib/logos');
 const net = require('./lib/netutil');
 
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const env = process.env;
 const PORT = Number(env.PORT) || 6001;
 const DATA_DIR = env.DATA_DIR || '/data';
@@ -37,7 +37,7 @@ function main() {
 
   const MIME = {
     '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-    '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json',
+    '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   };
 
   const SEC = {
@@ -204,7 +204,7 @@ function main() {
     fs.readFile(file, (err, buf) => {
       if (err) return send(res, 404, 'Niet gevonden', { 'Content-Type': 'text/plain; charset=utf-8' });
       const type = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
-      const cache = /\.(png|svg|ico)$/.test(file) ? 'public, max-age=86400' : 'no-cache';
+      const cache = /\.(png|svg|ico|webmanifest)$/.test(file) ? 'public, max-age=86400' : 'no-cache';
       send(res, 200, buf, { 'Content-Type': type, 'Cache-Control': cache });
     });
   }
