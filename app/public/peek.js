@@ -49,29 +49,23 @@
     return el;
   }
 
-  // ---- thema ----
-  const root = document.documentElement;
-  function applyTheme(t) {
-    const theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    root.setAttribute('data-theme', theme);
-  }
-  let savedTheme = null;
-  try { savedTheme = localStorage.getItem('peek-theme'); } catch { /* geen opslag */ }
-  applyTheme(savedTheme);
-  $('themeBtn').addEventListener('click', () => {
-    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    try { localStorage.setItem('peek-theme', next); } catch { /* geen opslag */ }
-  });
-
   // ---- toestand ----
+  const SORTS = ['name', 'ip', 'mac', 'vendor', 'seen'];
+  const SORT_DEFAULT_DIR = { seen: -1 }; // laatst gezien: nieuwste eerst, de rest oplopend
   let data = null;
   let filter = 'all';
   let sortBy = 'ip';
+  let sortDir = 1; // 1 = oplopend, -1 = aflopend
   let query = '';
   const open = new Set();
   let pendingRender = false;
   let pollTimer = null;
+
+  try {
+    const s = localStorage.getItem('peek-sort');
+    if (SORTS.includes(s)) sortBy = s;
+    if (localStorage.getItem('peek-sortdir') === '-1') sortDir = -1;
+  } catch { /* geen opslag */ }
 
   function toast(msg) {
     const t = $('toast');
@@ -85,7 +79,10 @@
     const o = Object.assign({ headers: {} }, opts);
     if (o.body && typeof o.body !== 'string') { o.body = JSON.stringify(o.body); o.headers['Content-Type'] = 'application/json'; }
     const res = await fetch(path, o);
-    if (res.status === 401 && path !== '/api/login') { showLogin(); throw new Error('Niet ingelogd'); }
+    if (res.status === 401 && path !== '/api/login') {
+      if (!document.body.classList.contains('inlog')) showLogin();
+      throw new Error('Niet ingelogd');
+    }
     let body = null;
     try { body = await res.json(); } catch { /* geen JSON */ }
     if (!res.ok) throw new Error((body && body.error) || 'Er ging iets mis (' + res.status + ')');
@@ -110,13 +107,58 @@
     return m <= 0 ? 'zo meteen' : 'over ' + m + ' min';
   }
 
-  // ---- weergave ----
+  // ---- fabrikantlogo of monogram ----
+  const logoState = new Map(); // merk -> 'busy' | 'ok' | 'none'
+  let logoTimer = null;
+
+  function probeLogo(slug) {
+    logoState.set(slug, 'busy');
+    const im = new Image();
+    im.onload = () => { logoState.set(slug, 'ok'); clearTimeout(logoTimer); logoTimer = setTimeout(render, 150); };
+    im.onerror = () => { logoState.set(slug, 'none'); };
+    im.src = '/api/vendor-logo/' + slug + '.svg';
+  }
+
+  function monogram(name, small) {
+    const text = String(name);
+    const letter = (text.match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase();
+    let n = 0;
+    for (const ch of text.toLowerCase()) n = (n * 31 + ch.charCodeAt(0)) % 5;
+    return h('span', { class: 'mg mg' + n + (small ? ' sm' : ''), 'aria-hidden': 'true' }, letter);
+  }
+
+  function vendorMark(d, small) {
+    if (!d.vendor) return null;
+    const slug = d.vendorSlug;
+    if (slug && data.logos !== false) {
+      const st = logoState.get(slug);
+      if (st === 'ok') {
+        const url = 'url("/api/vendor-logo/' + slug + '.svg")';
+        const el = h('span', { class: 'vlogo' + (small ? ' sm' : ''), role: 'img', 'aria-label': d.vendor });
+        el.style.setProperty('-webkit-mask-image', url); // via CSSOM, dus toegestaan door de CSP
+        el.style.setProperty('mask-image', url);
+        return el;
+      }
+      if (!st) probeLogo(slug);
+    }
+    return monogram(d.vendor, small);
+  }
+
+  // ---- sorteren en filteren ----
   function ipNum(ip) { return (ip || '0.0.0.0').split('.').reduce((a, o) => a * 256 + Number(o), 0); }
+
+  const SORT_VALUE = {
+    ip: (d) => ipNum(d.ip),
+    mac: (d) => d.mac,
+    name: (d) => d.name || '',
+    vendor: (d) => d.vendor || '',
+    seen: (d) => (d.online ? Number.MAX_SAFE_INTEGER : d.lastSeen || 0),
+  };
 
   function visible() {
     const q = query.trim().toLowerCase();
     const qm = q.replace(/[:\-]/g, '');
-    let list = data.devices.filter((d) => {
+    const list = data.devices.filter((d) => {
       if (filter === 'online' && !d.online) return false;
       if (filter === 'offline' && d.online) return false;
       if (filter === 'new' && !d.isNew) return false;
@@ -124,17 +166,40 @@
       const hay = [d.name, d.netName, d.ip, d.mac, d.vendor, d.note].join(' ').toLowerCase();
       return hay.includes(q) || (qm && d.mac.replace(/:/g, '').includes(qm));
     });
-    const byName = (a, b) => (a.name || '￿').localeCompare(b.name || '￿', 'nl', { sensitivity: 'base' });
-    const cmp = {
-      ip: (a, b) => ipNum(a.ip) - ipNum(b.ip),
-      name: (a, b) => byName(a, b) || ipNum(a.ip) - ipNum(b.ip),
-      vendor: (a, b) => (a.vendor || '￿').localeCompare(b.vendor || '￿', 'nl', { sensitivity: 'base' }) || ipNum(a.ip) - ipNum(b.ip),
-      seen: (a, b) => (b.online - a.online) || (b.lastSeen - a.lastSeen),
-    }[sortBy];
-    list = list.slice().sort(cmp);
+    const val = SORT_VALUE[sortBy];
+    list.sort((a, b) => {
+      const va = val(a);
+      const vb = val(b);
+      // Zonder naam of fabrikant staat altijd onderaan, welke kant je ook op sorteert
+      if ((sortBy === 'name' || sortBy === 'vendor') && va !== vb && (!va || !vb)) return va ? -1 : 1;
+      let c;
+      if (typeof va === 'string') c = va.localeCompare(vb, 'nl', { sensitivity: 'base', numeric: true });
+      else c = va < vb ? -1 : va > vb ? 1 : 0;
+      return c * sortDir || ipNum(a.ip) - ipNum(b.ip);
+    });
     return list;
   }
 
+  function syncSortUi() {
+    $('sort').value = sortBy;
+    $('sortDir').classList.toggle('asc', sortDir === 1);
+    for (const b of document.querySelectorAll('#kolommen button')) {
+      const on = b.dataset.s === sortBy;
+      b.classList.toggle('on', on);
+      b.classList.toggle('desc', on && sortDir === -1);
+      b.setAttribute('aria-sort', on ? (sortDir === 1 ? 'ascending' : 'descending') : 'none');
+    }
+  }
+
+  function setSort(key, dir) {
+    sortBy = key;
+    sortDir = dir;
+    try { localStorage.setItem('peek-sort', key); localStorage.setItem('peek-sortdir', String(dir)); } catch { /* geen opslag */ }
+    syncSortUi();
+    render();
+  }
+
+  // ---- weergave ----
   function renderStats() {
     const all = data.devices;
     const on = all.filter((d) => d.online).length;
@@ -151,10 +216,10 @@
 
   function renderTop() {
     const sub = data.subnet;
-    const bits = [sub.cidr];
+    const bits = ['Peek ' + data.version, sub.cidr];
     if (data.last && !data.last.error) bits.push('laatste scan ' + ago(data.last.at));
     if (data.nextAt && !data.scanning) bits.push('volgende ' + inMin(data.nextAt));
-    $('subline').textContent = bits.join(' · ');
+    $('voet').textContent = bits.join(' · ');
     $('scanBtn').disabled = data.scanning;
     $('scanBtn').textContent = data.scanning ? 'Bezig…' : 'Nu scannen';
     const bar = $('scanBar');
@@ -209,13 +274,13 @@
     for (const ic of data.icons) {
       picker.append(h('button', { type: 'button', class: d.iconCustom && d.icon === ic ? 'on' : '', title: ICON_LABEL[ic], 'aria-label': ICON_LABEL[ic], onclick: () => patch(d.mac, { icon: ic }) }, svg(ic)));
     }
-    picker.append(h('button', { type: 'button', class: !d.iconCustom ? 'on' : '', title: 'Automatisch kiezen', 'aria-label': 'Automatisch', style: null, onclick: () => patch(d.mac, { icon: '' }) }, 'Auto'));
+    picker.append(h('button', { type: 'button', class: !d.iconCustom ? 'on' : '', title: 'Automatisch kiezen', 'aria-label': 'Automatisch', onclick: () => patch(d.mac, { icon: '' }) }, 'Auto'));
 
     const vendorText = d.vendor ? d.vendor + (d.vendorSource === 'naam' ? ' (geraden op naam)' : '') : (d.privateMac ? 'Onbekend, privé-adres' : 'Onbekend');
     const facts = h('div', { class: 'facts' },
       h('span', {}, 'IP-adres'), h('b', { class: 'mono' }, d.ip || '-'),
       h('span', {}, 'MAC-adres'), h('b', { class: 'mono' }, d.mac),
-      h('span', {}, 'Fabrikant'), h('b', {}, vendorText),
+      h('span', {}, 'Fabrikant'), h('b', {}, vendorMark(d), vendorText),
       d.privateMac ? [h('span', {}, 'Privé-adres'), h('b', {}, 'Dit apparaat gebruikt een willekeurig MAC-adres (privacyfunctie).')] : null,
       h('span', {}, 'Naam in netwerk'), h('b', {}, d.netName ? d.netName + (d.nameSource ? ' (' + d.nameSource + ')' : '') : 'Geen naam gevonden'),
       h('span', {}, 'Eerst gezien'), h('b', {}, full(d.firstSeen)),
@@ -223,10 +288,10 @@
     );
 
     const actions = h('div', { class: 'detail-actions' },
-      h('button', { class: 'btn small', type: 'button', onclick: () => copy(d.mac) }, 'Kopieer MAC'),
-      d.ip ? h('button', { class: 'btn small', type: 'button', onclick: () => copy(d.ip) }, 'Kopieer IP') : null,
-      d.isNew ? h('button', { class: 'btn small primary', type: 'button', onclick: () => patch(d.mac, { known: true }) }, 'Markeer als bekend') : null,
-      (!d.online && !d.isSelf) ? h('button', { class: 'btn small danger', type: 'button', onclick: () => forget(d) }, 'Vergeet apparaat') : null,
+      h('button', { class: 'small', type: 'button', onclick: () => copy(d.mac) }, 'Kopieer MAC'),
+      d.ip ? h('button', { class: 'small', type: 'button', onclick: () => copy(d.ip) }, 'Kopieer IP') : null,
+      d.isNew ? h('button', { class: 'small primary', type: 'button', onclick: () => patch(d.mac, { known: true }) }, 'Markeer als bekend') : null,
+      (!d.online && !d.isSelf) ? h('button', { class: 'small gevaar', type: 'button', onclick: () => forget(d) }, 'Vergeet apparaat') : null,
     );
 
     return h('div', { class: 'detail' },
@@ -249,9 +314,7 @@
     let sub = '';
     if (d.customName && d.netName && d.customName.toLowerCase() !== d.netName.toLowerCase()) sub = d.netName;
     else if (d.note) sub = d.note.split('\n')[0];
-    const vendorEl = d.vendor
-      ? h('span', {}, d.vendor, d.vendorSource === 'naam' ? h('span', { class: 'g' }, ' (op naam)') : null)
-      : h('span', { class: 'g' }, d.privateMac ? 'Privé-adres' : 'Onbekend');
+    const vendorName = d.vendor ? d.vendor : (d.privateMac ? 'Privé-adres' : 'Onbekend');
     const seen = d.online ? 'Online' : ago(d.lastSeen);
 
     const toggle = () => {
@@ -272,10 +335,10 @@
         h('div', { class: 's' }, sub)),
       h('div', { class: 'ip mono' }, d.ip || '-'),
       h('div', { class: 'mac mono copy', title: 'Klik om te kopiëren', onclick: () => copy(d.mac) }, d.mac),
-      h('div', { class: 'vendor' }, vendorEl),
+      h('div', { class: 'vendor' }, vendorMark(d), h('span', { class: 'vt' }, vendorName, d.vendor && d.vendorSource === 'naam' ? h('span', { class: 'g' }, ' (op naam)') : null)),
       h('div', { class: 'seen' }, seen),
       svg('chev', 'chev'),
-      h('div', { class: 'meta' }, h('span', { class: 'mono' }, d.ip || '-'), h('span', {}, d.vendor || (d.privateMac ? 'Privé-adres' : 'Onbekend')), h('span', {}, seen)),
+      h('div', { class: 'meta' }, h('span', { class: 'mono' }, d.ip || '-'), h('span', { class: 'm' }, vendorMark(d, true), vendorName), h('span', {}, seen)),
     );
 
     return h('article', { class: 'dev' + (d.online ? ' online' : '') + (isOpen ? ' open' : ''), 'data-mac': d.mac }, row, isOpen ? detailPanel(d) : null);
@@ -290,8 +353,8 @@
       nodes.push(h('div', { class: 'banner newnote' },
         h('span', {}, nw === 1 ? '1 nieuw apparaat gezien op je netwerk.' : nw + ' nieuwe apparaten gezien op je netwerk.'),
         h('span', {},
-          h('button', { class: 'btn small', type: 'button', onclick: () => setFilter('new') }, 'Bekijk'), ' ',
-          h('button', { class: 'btn small', type: 'button', onclick: markAll }, 'Alles bekend'))));
+          h('button', { class: 'small', type: 'button', onclick: () => setFilter('new') }, 'Bekijk'), ' ',
+          h('button', { class: 'small', type: 'button', onclick: markAll }, 'Alles bekend'))));
     }
     for (const d of items) nodes.push(deviceEl(d));
     list.replaceChildren(...nodes);
@@ -348,7 +411,11 @@
 
   // ---- knoppen ----
   $('search').addEventListener('input', (e) => { query = e.target.value; render(); });
-  $('sort').addEventListener('change', (e) => { sortBy = e.target.value; try { localStorage.setItem('peek-sort', sortBy); } catch { /* geen opslag */ } render(); });
+  $('sort').addEventListener('change', (e) => setSort(e.target.value, SORT_DEFAULT_DIR[e.target.value] || 1));
+  $('sortDir').addEventListener('click', () => setSort(sortBy, -sortDir));
+  for (const b of document.querySelectorAll('#kolommen button')) {
+    b.addEventListener('click', () => (b.dataset.s === sortBy ? setSort(sortBy, -sortDir) : setSort(b.dataset.s, SORT_DEFAULT_DIR[b.dataset.s] || 1)));
+  }
   for (const b of document.querySelectorAll('#filters button')) b.addEventListener('click', () => setFilter(b.dataset.f));
   $('exportBtn').addEventListener('click', () => { location.href = '/api/export.csv'; });
   $('scanBtn').addEventListener('click', async () => {
@@ -365,9 +432,9 @@
     sel.value = String(data.settings.interval);
     $('setSubnet').value = data.settings.subnet;
     $('subnetHint').textContent = 'Nu in gebruik: ' + data.subnet.cidr + ' (' + data.subnet.source + ')';
+    $('setLogos').checked = data.settings.logos !== false;
     ouiInfo();
     $('settingsError').hidden = true;
-    $('versionInfo').textContent = 'Peek ' + data.version + (data.demo ? ' (demo)' : '');
     dlg.showModal();
   });
   function ouiInfo() {
@@ -382,9 +449,10 @@
   });
   async function saveSettings() {
     try {
-      await api('/api/settings', { method: 'PATCH', body: { interval: Number($('setInterval').value), subnet: $('setSubnet').value.trim() } });
+      await api('/api/settings', { method: 'PATCH', body: { interval: Number($('setInterval').value), subnet: $('setSubnet').value.trim(), logos: $('setLogos').checked } });
       dlg.close();
       toast('Instellingen opgeslagen');
+      logoState.clear();
       await refresh();
     } catch (e) { $('settingsError').textContent = e.message; $('settingsError').hidden = false; }
   }
@@ -395,27 +463,34 @@
   function showLogin() {
     clearTimeout(pollTimer);
     data = null;
+    document.body.classList.add('inlog');
+    $('acties').hidden = true;
     $('appView').hidden = true;
     $('loginView').hidden = false;
     $('loginPass').value = '';
+    $('loginError').textContent = '';
+    fetch('/api/version').then((r) => r.json()).then((v) => { $('voet').textContent = 'Peek ' + v.version; }).catch(() => {});
     setTimeout(() => $('loginUser').focus(), 50);
   }
   async function showApp() {
+    document.body.classList.remove('inlog');
+    $('acties').hidden = false;
     $('loginView').hidden = true;
     $('appView').hidden = false;
+    logoState.clear();
     await refresh();
   }
   $('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const err = $('loginError');
-    err.hidden = true;
+    $('loginError').textContent = '';
     try {
       await api('/api/login', { method: 'POST', body: { user: $('loginUser').value.trim(), password: $('loginPass').value } });
       await showApp();
-    } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    } catch (ex) { $('loginError').textContent = ex.message; }
   });
 
   // ---- start ----
-  try { const s = localStorage.getItem('peek-sort'); if (s) { sortBy = s; $('sort').value = s; } } catch { /* geen opslag */ }
+  $('sort').value = sortBy;
+  syncSortUi();
   api('/api/me').then(showApp, showLogin);
 })();

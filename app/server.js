@@ -7,13 +7,15 @@ const { createStore } = require('./lib/store');
 const { createOui } = require('./lib/oui');
 const { createAuth } = require('./lib/auth');
 const { createScanner } = require('./lib/scanner');
+const { createLogos } = require('./lib/logos');
 const net = require('./lib/netutil');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const env = process.env;
 const PORT = Number(env.PORT) || 6001;
 const DATA_DIR = env.DATA_DIR || '/data';
 const DEMO = env.PEEK_DEMO === '1';
+const DEMO_NO_LOGOS = DEMO && env.PEEK_LOGO_URL === undefined; // demo zonder internet: geen aanvragen
 const PUBLIC = path.join(__dirname, 'public');
 
 function main() {
@@ -31,6 +33,7 @@ function main() {
   if (demo) { oui.setDemo(demo.OUI); demo.seed(store); } else { oui.load(); oui.schedule(); }
   const auth = createAuth({ dataDir: DATA_DIR, user, password });
   const scanner = createScanner({ store, oui, env, demo });
+  const logos = createLogos({ dataDir: DATA_DIR, enabled: () => scanner.settings().logos && !DEMO_NO_LOGOS, urlTemplate: env.PEEK_LOGO_URL });
 
   const MIME = {
     '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -94,6 +97,7 @@ function main() {
       nextAt: s.nextAt,
       subnet: { cidr: sub.cidr, source: sub.source, iface: sub.iface || null, ip: sub.ip || null, gateway: sub.gateway || null, warning: sub.warning || null },
       settings: scanner.settings(),
+      logos: scanner.settings().logos,
       intervals: scanner.INTERVALS,
       icons: scanner.VALID_ICONS,
       oui: oui.status(),
@@ -112,6 +116,8 @@ function main() {
         return json(res, 415, { error: 'JSON verwacht' });
       }
     }
+
+    if (p === '/api/version' && method === 'GET') return json(res, 200, { version: VERSION });
 
     if (p === '/api/login' && method === 'POST') {
       const wait = auth.blockedFor(req);
@@ -155,6 +161,17 @@ function main() {
 
     if (p === '/api/export.csv' && method === 'GET') {
       return send(res, 200, exportCsv(), { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="peek-apparaten.csv"' });
+    }
+
+    const lg = /^\/api\/vendor-logo\/([a-z0-9]{1,30})\.svg$/.exec(p);
+    if (lg && method === 'GET') {
+      const svg = await logos.get(lg[1]);
+      if (!svg) return json(res, 404, { error: 'Geen logo' });
+      return send(res, 200, svg, {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'private, max-age=604800',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+      });
     }
 
     const m = /^\/api\/devices\/([^/]+)$/.exec(p);

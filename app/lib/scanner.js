@@ -11,6 +11,7 @@ const dgram = require('dgram');
 const os = require('os');
 const net = require('./netutil');
 const names = require('./names');
+const { slugFor } = require('./logos');
 
 const MISS_LIMIT = 2; // zo vaak gemist voordat een apparaat offline heet
 const NAME_TTL_KNOWN = 6 * 3600 * 1000;
@@ -34,7 +35,8 @@ function createScanner({ store, oui, env, demo }) {
     const s = store.data.settings;
     let interval = Number.isFinite(s.interval) ? s.interval : Number(env.PEEK_INTERVAL);
     if (!INTERVALS.includes(interval)) interval = 5;
-    return { interval, subnet: s.subnet || '' };
+    const logos = s.logos !== undefined ? !!s.logos : env.PEEK_LOGOS !== '0';
+    return { interval, subnet: s.subnet || '', logos };
   }
 
   function resolveSubnet() {
@@ -65,6 +67,7 @@ function createScanner({ store, oui, env, demo }) {
       if (v) net.parseCidr(v); // gooit een fout bij onzin
       s.subnet = v ? net.parseCidr(v).cidr : '';
     }
+    if (patch.logos !== undefined) s.logos = !!patch.logos;
     store.save();
     state.subnet = safeResolve();
     planNext();
@@ -235,6 +238,7 @@ function createScanner({ store, oui, env, demo }) {
         iconCustom: !!(d.icon && VALID_ICONS.includes(d.icon)),
         vendor,
         vendorSource,
+        vendorSlug: slugFor(vendor),
         privateMac: priv,
         online: !!d.online,
         lastSeen: d.lastSeen,

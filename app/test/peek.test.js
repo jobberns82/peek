@@ -10,6 +10,8 @@ const net = require('../lib/netutil');
 const names = require('../lib/names');
 const { createOui } = require('../lib/oui');
 const { createAuth } = require('../lib/auth');
+const logosLib = require('../lib/logos');
+const http = require('http');
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'peek-test-'));
 
@@ -181,12 +183,72 @@ test('rem op foute pogingen', () => {
   assert.equal(a.blockedFor({ headers: { 'x-forwarded-for': '5.6.7.8' }, socket: {} }), 0, 'andere bezoeker niet geblokkeerd');
 });
 
+// ---------- fabrikantlogo's ----------
+test('logo: merk bij fabrikant en alleen veilige SVG', () => {
+  assert.equal(logosLib.slugFor('Apple'), 'apple');
+  assert.equal(logosLib.slugFor('TP-LINK TECHNOLOGIES'), 'tplink');
+  assert.equal(logosLib.slugFor('Signify'), 'philipshue');
+  assert.equal(logosLib.slugFor('Microsoft (Windows)'), 'microsoft');
+  assert.equal(logosLib.slugFor('Onbekende Fabriek BV'), null);
+  assert.equal(logosLib.slugFor(null), null);
+  const ok = '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z"/></svg>';
+  assert.equal(logosLib.clean(ok), ok);
+  assert.equal(logosLib.clean('<?xml version="1.0"?>\n' + ok).startsWith('<?xml'), true);
+  for (const bad of [
+    '<svg onload="alert(1)"><path d="M0 0"/></svg>',
+    '<svg><script>alert(1)</script></svg>',
+    '<svg><foreignObject><div/></foreignObject></svg>',
+    '<svg><image href="http://x/y.png"/></svg>',
+    '<svg><a href="javascript:alert(1)"><path d="M0 0"/></a></svg>',
+    '<html><body>geen svg</body></html>',
+    '',
+  ]) assert.equal(logosLib.clean(bad), null, bad);
+});
+
+test('logo: ophalen, bewaren en onthouden wat niet bestaat', async () => {
+  const dir = tmp();
+  const calls = [];
+  const svg = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h20v20H2z"/></svg>';
+  let mode = 'ok';
+  const fakeFetch = async (url) => {
+    calls.push(url);
+    if (mode === 'down') throw new Error('geen internet');
+    if (url.endsWith('/sonos.svg')) return { status: 404, ok: false, text: async () => '' };
+    if (url.endsWith('/dell.svg')) return { status: 200, ok: true, text: async () => '<svg onload="x()"></svg>' };
+    return { status: 200, ok: true, text: async () => svg };
+  };
+  let enabled = true;
+  const logos = logosLib.createLogos({ dataDir: dir, enabled: () => enabled, fetchFn: fakeFetch, urlTemplate: 'https://example.test/{slug}.svg' });
+
+  assert.equal(await logos.get('niet-in-de-lijst'), null);
+  assert.equal(calls.length, 0, 'onbekend merk wordt nooit opgevraagd');
+  assert.equal(await logos.get('apple'), svg);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0], 'https://example.test/apple.svg', 'alleen de merknaam gaat naar buiten');
+  assert.equal(await logos.get('apple'), svg);
+  assert.equal(calls.length, 1, 'tweede keer uit de eigen opslag');
+  assert.equal(await logos.get('sonos'), null);
+  assert.equal(await logos.get('sonos'), null);
+  assert.equal(calls.filter((u) => u.includes('sonos')).length, 1, '404 wordt onthouden');
+  assert.equal(await logos.get('dell'), null, 'onveilige SVG wordt geweigerd');
+  assert.ok(!fs.existsSync(path.join(dir, 'logos', 'dell.svg')));
+  mode = 'down';
+  assert.equal(await logos.get('lg'), null);
+  mode = 'ok';
+  assert.equal(await logos.get('lg'), null, 'na een storing even niet opnieuw proberen');
+  assert.equal(calls.filter((u) => u.includes('/lg.svg')).length, 1);
+  enabled = false;
+  assert.equal(await logos.get('apple'), svg, 'uitgeschakeld: opgeslagen logo blijft werken');
+  assert.equal(await logos.get('google'), null, 'uitgeschakeld: niets nieuws ophalen');
+  assert.equal(calls.filter((u) => u.includes('google')).length, 0);
+});
+
 // ---------- hele server (demo-modus) ----------
-async function startServer() {
+async function startServer(extraEnv) {
   const port = 20000 + Math.floor(Math.random() * 20000);
   const dir = tmp();
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, PORT: String(port), DATA_DIR: dir, PEEK_DEMO: '1', PEEK_USER: 'job', PEEK_PASSWORD: 'test-wachtwoord' },
+    env: { ...process.env, PORT: String(port), DATA_DIR: dir, PEEK_DEMO: '1', PEEK_USER: 'job', PEEK_PASSWORD: 'test-wachtwoord', ...extraEnv },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   await new Promise((resolve, reject) => {
@@ -272,6 +334,53 @@ test('server: login, beveiliging en API', async (t) => {
   // uitloggen maakt de cookie ongeldig voor de browser
   r = await fetch(base + '/api/logout', { method: 'POST', headers: C });
   assert.match(r.headers.get('set-cookie'), /Max-Age=0/);
+});
+
+test('server: fabrikantlogo via eigen route, achter de login', async (t) => {
+  const svg = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>';
+  const asked = [];
+  const logoHost = http.createServer((req, res) => {
+    asked.push(req.url);
+    if (req.url === '/apple.svg') { res.writeHead(200, { 'Content-Type': 'image/svg+xml' }); res.end(svg); } else { res.writeHead(404); res.end(); }
+  });
+  await new Promise((r) => logoHost.listen(0, '127.0.0.1', r));
+  const { base, child } = await startServer({ PEEK_LOGO_URL: 'http://127.0.0.1:' + logoHost.address().port + '/{slug}.svg' });
+  t.after(() => { child.kill(); logoHost.close(); });
+  const J = { 'Content-Type': 'application/json' };
+
+  assert.equal((await fetch(base + '/api/vendor-logo/apple.svg')).status, 401, 'zonder login geen logo');
+  const v = await (await fetch(base + '/api/version')).json();
+  assert.equal(v.version, '1.1.0', 'versie is zonder login te zien (inlogscherm)');
+
+  const ok = await fetch(base + '/api/login', { method: 'POST', headers: J, body: JSON.stringify({ user: 'job', password: 'test-wachtwoord' }) });
+  const C = { Cookie: ok.headers.get('set-cookie').split(';')[0] };
+  await new Promise((r) => setTimeout(r, 2500));
+  const st = await (await fetch(base + '/api/state', { headers: C })).json();
+  assert.ok(st.devices.find((d) => d.vendor === 'Apple').vendorSlug === 'apple');
+  assert.equal(st.devices.find((d) => !d.vendor).vendorSlug, null);
+  assert.equal(st.logos, true);
+
+  let r = await fetch(base + '/api/vendor-logo/apple.svg', { headers: C });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('content-type'), 'image/svg+xml');
+  assert.match(r.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.equal(await r.text(), svg);
+  r = await fetch(base + '/api/vendor-logo/sonos.svg', { headers: C });
+  assert.equal(r.status, 404, 'monogram als terugval');
+  r = await fetch(base + '/api/vendor-logo/..%2fetc.svg', { headers: C });
+  assert.equal(r.status, 404);
+  r = await fetch(base + '/api/vendor-logo/onbekendmerk.svg', { headers: C });
+  assert.equal(r.status, 404);
+  assert.ok(!asked.includes('/onbekendmerk.svg'), 'alleen vaste merken worden opgevraagd');
+
+  // uitzetten in de instellingen: niets nieuws meer ophalen
+  r = await fetch(base + '/api/settings', { method: 'PATCH', headers: { ...J, ...C }, body: JSON.stringify({ logos: false }) });
+  assert.equal(r.status, 200);
+  const before = asked.length;
+  await fetch(base + '/api/vendor-logo/samsung.svg', { headers: C });
+  assert.equal(asked.length, before);
+  const st2 = await (await fetch(base + '/api/state', { headers: C })).json();
+  assert.equal(st2.logos, false);
 });
 
 test('server start niet zonder wachtwoord', async () => {

@@ -8,80 +8,100 @@
   <meta name="theme-color" content="#F1F3F2" media="(prefers-color-scheme: light)">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/peek.css?v=1.0.0">
+  <script src="/theme.js?v=1.1.0"></script>
+  <link rel="stylesheet" href="/peek.css?v=1.1.0">
 </head>
-<body>
+<body class="inlog">
   <svg class="sprite" width="0" height="0" aria-hidden="true">
     <symbol id="logo" viewBox="0 0 512 512">
       <g transform="translate(0 -32)">
-      <path d="M112 430H400a16 16 0 0 0 16-16V222a16 16 0 0 0-16-16H332V162a16 16 0 0 0-16-16H196a16 16 0 0 0-16 16V206H112a16 16 0 0 0-16 16V414a16 16 0 0 0 16 16Z" fill="none" stroke="currentColor" stroke-width="26" stroke-linejoin="round"/>
-      <path d="M170 282Q256 206 342 282Q256 358 170 282Z" fill="none" stroke="var(--accent)" stroke-width="20" stroke-linejoin="round"/>
-      <circle cx="256" cy="282" r="26" fill="var(--accent)"/>
-      <g fill="currentColor"><rect x="150" y="352" width="14" height="46" rx="5"/><rect x="178" y="352" width="14" height="46" rx="5"/><rect x="206" y="352" width="14" height="46" rx="5"/><rect x="234" y="352" width="14" height="46" rx="5"/><rect x="262" y="352" width="14" height="46" rx="5"/><rect x="290" y="352" width="14" height="46" rx="5"/><rect x="318" y="352" width="14" height="46" rx="5"/><rect x="346" y="352" width="14" height="46" rx="5"/></g>
+        <path d="M112 430H400a16 16 0 0 0 16-16V222a16 16 0 0 0-16-16H332V162a16 16 0 0 0-16-16H196a16 16 0 0 0-16 16V206H112a16 16 0 0 0-16 16V414a16 16 0 0 0 16 16Z" fill="none" stroke="currentColor" stroke-width="26" stroke-linejoin="round"/>
+        <path d="M170 282Q256 206 342 282Q256 358 170 282Z" fill="none" stroke="var(--accent)" stroke-width="20" stroke-linejoin="round"/>
+        <circle cx="256" cy="282" r="26" fill="var(--accent)"/>
+        <g fill="currentColor"><rect x="150" y="352" width="14" height="46" rx="5"/><rect x="178" y="352" width="14" height="46" rx="5"/><rect x="206" y="352" width="14" height="46" rx="5"/><rect x="234" y="352" width="14" height="46" rx="5"/><rect x="262" y="352" width="14" height="46" rx="5"/><rect x="290" y="352" width="14" height="46" rx="5"/><rect x="318" y="352" width="14" height="46" rx="5"/><rect x="346" y="352" width="14" height="46" rx="5"/></g>
       </g>
     </symbol>
   </svg>
 
-  <!-- Inloggen -->
-  <div id="loginView" class="login" hidden>
-    <form id="loginForm" class="card login-card" autocomplete="on">
-      <svg class="logo big" aria-hidden="true"><use href="#logo"/></svg>
-      <h1>Peek</h1>
-      <p class="muted">Log in om je netwerk te bekijken.</p>
-      <label>Gebruikersnaam<input id="loginUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
-      <label>Wachtwoord<input id="loginPass" name="password" type="password" autocomplete="current-password" required></label>
-      <p id="loginError" class="error" role="alert" hidden></p>
-      <button class="btn primary" type="submit">Inloggen</button>
-    </form>
-  </div>
-
-  <!-- App -->
-  <div id="appView" hidden>
-    <header class="top">
-      <div class="brand">
+  <div class="wrap">
+    <header class="bovenrij">
+      <div class="titel">
         <svg class="logo" aria-hidden="true"><use href="#logo"/></svg>
-        <div>
-          <div class="brand-name">Peek</div>
-          <div id="subline" class="subline"></div>
-        </div>
+        <h1>PEEK</h1>
       </div>
-      <div class="top-actions">
-        <button id="scanBtn" class="btn primary" type="button">Nu scannen</button>
-        <button id="themeBtn" class="btn icon" type="button" title="Licht of donker" aria-label="Licht of donker"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
-        <button id="settingsBtn" class="btn icon" type="button" title="Instellingen" aria-label="Instellingen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.5-2.4.9a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.4a7.6 7.6 0 0 0-2.6 1.5l-2.4-.9-2 3.5 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.5 2.4-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.6 7.6 0 0 0 2.6-1.5l2.4.9 2-3.5Z"/></svg></button>
-        <button id="logoutBtn" class="btn icon" type="button" title="Uitloggen" aria-label="Uitloggen"><svg viewBox="0 0 24 24"><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9M15 8l4 4-4 4M19 12H9"/></svg></button>
+      <div class="acties" id="acties" hidden>
+        <button id="scanBtn" class="primary" type="button">Nu scannen</button>
+        <button id="settingsBtn" class="icoknop" type="button" title="Instellingen" aria-label="Instellingen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.5-2.4.9a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.4a7.6 7.6 0 0 0-2.6 1.5l-2.4-.9-2 3.5 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.5 2.4-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.6 7.6 0 0 0 2.6-1.5l2.4.9 2-3.5Z"/></svg></button>
+        <button id="logoutBtn" class="icoknop" type="button" title="Uitloggen" aria-label="Uitloggen"><svg viewBox="0 0 24 24"><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9M15 8l4 4-4 4M19 12H9"/></svg></button>
       </div>
     </header>
 
-    <div id="scanBar" class="scanbar" hidden><span class="spin"></span><span id="scanText">Scannen…</span></div>
-    <div id="banner" class="banner" hidden></div>
+    <!-- Inloggen -->
+    <div id="loginView" hidden>
+      <form id="loginForm" class="card" autocomplete="on">
+        <h2 class="kopje">Inloggen</h2>
+        <input id="loginUser" name="username" placeholder="Gebruikersnaam" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        <input id="loginPass" name="password" type="password" placeholder="Wachtwoord" autocomplete="current-password" required>
+        <div id="loginError" class="melding" role="alert"></div>
+        <button class="primary" type="submit">Inloggen</button>
+      </form>
+    </div>
 
-    <main>
-      <section class="stats" id="stats"></section>
+    <!-- App -->
+    <div id="appView" hidden>
+      <div id="scanBar" class="scanbar" hidden><span class="spin"></span><span id="scanText">Scannen…</span></div>
+      <div id="banner" class="banner" hidden></div>
 
-      <section class="bar">
-        <div class="search">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-          <input id="search" type="search" placeholder="Zoek op naam, IP, MAC of fabrikant" autocomplete="off" spellcheck="false">
+      <main>
+        <section class="stats" id="stats"></section>
+
+        <section class="bar">
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+            <input id="search" type="search" placeholder="Zoek op naam, IP, MAC of fabrikant" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="seg" id="filters" role="tablist" aria-label="Filter">
+            <button type="button" data-f="all" class="on">Alle</button>
+            <button type="button" data-f="online">Online</button>
+            <button type="button" data-f="offline">Offline</button>
+            <button type="button" data-f="new">Nieuw</button>
+          </div>
+          <div class="sortgroep">
+            <select id="sort" aria-label="Sorteren">
+              <option value="name">Naam</option>
+              <option value="ip">IP-adres</option>
+              <option value="mac">MAC-adres</option>
+              <option value="vendor">Fabrikant</option>
+              <option value="seen">Laatst gezien</option>
+            </select>
+            <button id="sortDir" class="icoknop rand" type="button" title="Oplopend of aflopend" aria-label="Richting van het sorteren"><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
+          </div>
+          <button id="exportBtn" type="button">CSV</button>
+        </section>
+
+        <div class="kolommen" id="kolommen" role="row">
+          <span></span>
+          <button type="button" data-s="name">Naam<i></i></button>
+          <button type="button" data-s="ip">IP-adres<i></i></button>
+          <button type="button" data-s="mac">MAC-adres<i></i></button>
+          <button type="button" data-s="vendor">Fabrikant<i></i></button>
+          <button type="button" data-s="seen">Laatst gezien<i></i></button>
+          <span></span>
         </div>
-        <div class="seg" id="filters" role="tablist" aria-label="Filter">
-          <button type="button" data-f="all" class="on">Alle</button>
-          <button type="button" data-f="online">Online</button>
-          <button type="button" data-f="offline">Offline</button>
-          <button type="button" data-f="new">Nieuw</button>
-        </div>
-        <select id="sort" aria-label="Sorteren">
-          <option value="ip">Sorteer op IP</option>
-          <option value="name">Sorteer op naam</option>
-          <option value="vendor">Sorteer op fabrikant</option>
-          <option value="seen">Sorteer op laatst gezien</option>
-        </select>
-        <button id="exportBtn" class="btn" type="button">CSV</button>
-      </section>
 
-      <section id="list" class="list" aria-live="polite"></section>
-      <p id="empty" class="empty" hidden></p>
-    </main>
+        <section id="list" class="list" aria-live="polite"></section>
+        <p id="empty" class="empty" hidden></p>
+      </main>
+    </div>
+
+    <div class="voetrij">
+      <span id="voet"></span>
+      <div class="thema" id="thema" role="group" aria-label="Dag- en nachtmodus">
+        <button type="button" data-t="auto" title="Volgt je apparaat">Auto</button>
+        <button type="button" data-t="light" title="Dagmodus">☀︎</button>
+        <button type="button" data-t="dark" title="Nachtmodus">☾</button>
+      </div>
+    </div>
   </div>
 
   <!-- Instellingen -->
@@ -95,20 +115,23 @@
         <input id="setSubnet" placeholder="Leeg laten voor automatisch" spellcheck="false" autocomplete="off">
         <span id="subnetHint" class="hint"></span>
       </label>
+      <label class="vink">
+        <input id="setLogos" type="checkbox">
+        <span>Fabrikantlogo's ophalen<span class="hint"> Alleen de merknaam (bijvoorbeeld "apple") gaat naar jsDelivr, nooit MAC-adressen of apparaatnamen. Uit betekent een letter in plaats van een logo.</span></span>
+      </label>
       <div class="oui-box">
         <div><strong>Fabrikantenlijst</strong><div id="ouiInfo" class="hint"></div></div>
-        <button class="btn" id="ouiBtn" type="button">Nu bijwerken</button>
+        <button id="ouiBtn" type="button">Nu bijwerken</button>
       </div>
       <p id="settingsError" class="error" hidden></p>
       <div class="dlg-actions">
-        <button class="btn" value="cancel" type="submit" id="setCancel">Sluiten</button>
-        <button class="btn primary" type="button" id="setSave">Opslaan</button>
+        <button value="cancel" type="submit" id="setCancel">Sluiten</button>
+        <button class="primary" type="button" id="setSave">Opslaan</button>
       </div>
-      <p id="versionInfo" class="hint center"></p>
     </form>
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="/peek.js?v=1.0.0"></script>
+  <script src="/peek.js?v=1.1.0"></script>
 </body>
 </html>
