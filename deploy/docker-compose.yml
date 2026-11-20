@@ -1,0 +1,19 @@
+# Peek: netwerkscanner (alleen kijken)
+# Let op: network_mode host is nodig, anders ziet Peek alleen het interne Docker-netwerk
+# en geen MAC-adressen van je apparaten.
+services:
+  peek:
+    image: ghcr.io/jobberns82/peek:latest
+    container_name: peek
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: "6001"
+      PEEK_USER: "kies-een-gebruikersnaam"
+      PEEK_PASSWORD: "kies-een-sterk-wachtwoord"
+      TZ: Europe/Amsterdam
+      # Optioneel:
+      # PEEK_SUBNET: "192.168.2.0/24"   # leeg = automatisch zoeken
+      # PEEK_INTERVAL: "5"               # minuten tussen scans, 0 = alleen handmatig
+    volumes:
+      - /DATA/AppData/peek/data:/data

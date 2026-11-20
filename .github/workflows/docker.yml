@@ -1,0 +1,61 @@
+name: Bouwen en publiceren
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 4 1 * *" # onderhoudsbouw op de 1e van de maand
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests
+        run: node --test app/test/peek.test.js
+
+      - name: Versie lezen
+        id: v
+        run: echo "version=$(tr -d '[:space:]' < VERSIE)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image bouwen en publiceren
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          pull: true
+          no-cache: ${{ github.event_name == 'schedule' }}
+          tags: |
+            ghcr.io/jobberns82/peek:latest
+            ghcr.io/jobberns82/peek:${{ steps.v.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.v.outputs.version }}
+
+      - name: Release maken met de tekst uit CHANGELOG.md
+        if: github.event_name != 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v="v${{ steps.v.outputs.version }}"
+          if gh release view "$v" >/dev/null 2>&1; then echo "Release $v bestaat al"; exit 0; fi
+          awk -v ver="${{ steps.v.outputs.version }}" '$0 ~ "^## " ver " " {p=1; next} /^## /{p=0} p' CHANGELOG.md > notes.md
+          gh release create "$v" --title "Peek $v" --notes-file notes.md --target "$GITHUB_SHA"

@@ -1,0 +1,11 @@
+{
+  "name": "peek",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Peek: netwerkscanner voor thuis. Alleen kijken.",
+  "scripts": {
+    "start": "node app/server.js",
+    "test": "node --test app/test/peek.test.js"
+  },
+  "engines": { "node": ">=22" }
+}

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Peek</title>
+  <meta name="theme-color" content="#15191B" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F1F3F2" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/peek.css?v=1.0.0">
+</head>
+<body>
+  <svg class="sprite" width="0" height="0" aria-hidden="true">
+    <symbol id="logo" viewBox="0 0 512 512">
+      <g transform="translate(0 -32)">
+      <path d="M112 430H400a16 16 0 0 0 16-16V222a16 16 0 0 0-16-16H332V162a16 16 0 0 0-16-16H196a16 16 0 0 0-16 16V206H112a16 16 0 0 0-16 16V414a16 16 0 0 0 16 16Z" fill="none" stroke="currentColor" stroke-width="26" stroke-linejoin="round"/>
+      <path d="M170 282Q256 206 342 282Q256 358 170 282Z" fill="none" stroke="var(--accent)" stroke-width="20" stroke-linejoin="round"/>
+      <circle cx="256" cy="282" r="26" fill="var(--accent)"/>
+      <g fill="currentColor"><rect x="150" y="352" width="14" height="46" rx="5"/><rect x="178" y="352" width="14" height="46" rx="5"/><rect x="206" y="352" width="14" height="46" rx="5"/><rect x="234" y="352" width="14" height="46" rx="5"/><rect x="262" y="352" width="14" height="46" rx="5"/><rect x="290" y="352" width="14" height="46" rx="5"/><rect x="318" y="352" width="14" height="46" rx="5"/><rect x="346" y="352" width="14" height="46" rx="5"/></g>
+      </g>
+    </symbol>
+  </svg>
+
+  <!-- Inloggen -->
+  <div id="loginView" class="login" hidden>
+    <form id="loginForm" class="card login-card" autocomplete="on">
+      <svg class="logo big" aria-hidden="true"><use href="#logo"/></svg>
+      <h1>Peek</h1>
+      <p class="muted">Log in om je netwerk te bekijken.</p>
+      <label>Gebruikersnaam<input id="loginUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label>Wachtwoord<input id="loginPass" name="password" type="password" autocomplete="current-password" required></label>
+      <p id="loginError" class="error" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Inloggen</button>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="appView" hidden>
+    <header class="top">
+      <div class="brand">
+        <svg class="logo" aria-hidden="true"><use href="#logo"/></svg>
+        <div>
+          <div class="brand-name">Peek</div>
+          <div id="subline" class="subline"></div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="scanBtn" class="btn primary" type="button">Nu scannen</button>
+        <button id="themeBtn" class="btn icon" type="button" title="Licht of donker" aria-label="Licht of donker"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
+        <button id="settingsBtn" class="btn icon" type="button" title="Instellingen" aria-label="Instellingen"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.5-2.4.9a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.4a7.6 7.6 0 0 0-2.6 1.5l-2.4-.9-2 3.5 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.5 2.4-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.6 7.6 0 0 0 2.6-1.5l2.4.9 2-3.5Z"/></svg></button>
+        <button id="logoutBtn" class="btn icon" type="button" title="Uitloggen" aria-label="Uitloggen"><svg viewBox="0 0 24 24"><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9M15 8l4 4-4 4M19 12H9"/></svg></button>
+      </div>
+    </header>
+
+    <div id="scanBar" class="scanbar" hidden><span class="spin"></span><span id="scanText">Scannen…</span></div>
+    <div id="banner" class="banner" hidden></div>
+
+    <main>
+      <section class="stats" id="stats"></section>
+
+      <section class="bar">
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          <input id="search" type="search" placeholder="Zoek op naam, IP, MAC of fabrikant" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="seg" id="filters" role="tablist" aria-label="Filter">
+          <button type="button" data-f="all" class="on">Alle</button>
+          <button type="button" data-f="online">Online</button>
+          <button type="button" data-f="offline">Offline</button>
+          <button type="button" data-f="new">Nieuw</button>
+        </div>
+        <select id="sort" aria-label="Sorteren">
+          <option value="ip">Sorteer op IP</option>
+          <option value="name">Sorteer op naam</option>
+          <option value="vendor">Sorteer op fabrikant</option>
+          <option value="seen">Sorteer op laatst gezien</option>
+        </select>
+        <button id="exportBtn" class="btn" type="button">CSV</button>
+      </section>
+
+      <section id="list" class="list" aria-live="polite"></section>
+      <p id="empty" class="empty" hidden></p>
+    </main>
+  </div>
+
+  <!-- Instellingen -->
+  <dialog id="settingsDlg" class="dlg">
+    <form method="dialog" class="card dlg-card" id="settingsForm">
+      <h2>Instellingen</h2>
+      <label>Automatisch scannen
+        <select id="setInterval"></select>
+      </label>
+      <label>Subnet
+        <input id="setSubnet" placeholder="Leeg laten voor automatisch" spellcheck="false" autocomplete="off">
+        <span id="subnetHint" class="hint"></span>
+      </label>
+      <div class="oui-box">
+        <div><strong>Fabrikantenlijst</strong><div id="ouiInfo" class="hint"></div></div>
+        <button class="btn" id="ouiBtn" type="button">Nu bijwerken</button>
+      </div>
+      <p id="settingsError" class="error" hidden></p>
+      <div class="dlg-actions">
+        <button class="btn" value="cancel" type="submit" id="setCancel">Sluiten</button>
+        <button class="btn primary" type="button" id="setSave">Opslaan</button>
+      </div>
+      <p id="versionInfo" class="hint center"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/peek.js?v=1.0.0"></script>
+</body>
+</html>
