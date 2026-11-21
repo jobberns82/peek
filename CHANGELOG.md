@@ -1,5 +1,9 @@
 # Wijzigingen
 
+## 1.2.0 (2026-11-21)
+
+- Open-knop: bij online apparaten die meestal een webpagina hebben (router, printer, camera, server, hubs, klimaat- en smarthome-apparaten) staat een klein icoontje achter het IP-adres. In het detailvenster van elk online apparaat staat de knop Open webpagina (http://<ip>, nieuw tabblad). Peek scant hiervoor geen poorten.
+
 ## 1.1.1 (2026-11-20)
 
 - Nieuw logo: stekker met een symmetrisch oog dat over de linkerwand valt (wit met zwarte pupil in donker, zwart met witte pupil in licht). Logo's zonder achtergrond als PNG in de map logo.

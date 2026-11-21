@@ -51,6 +51,8 @@
     ev: '<rect x="6" y="3" width="12" height="18" rx="2.5"/><path d="M12.800 7l-2.800 5h3.500l-2.800 5"/>',
     unknown: '<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.7a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1.1.9-1.1 1.6M12 16.5h.01"/>',
     chev: '<path d="m6 9 6 6 6-6"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
   };
   const ICON_LABEL = {
@@ -65,6 +67,20 @@
     return el;
   }
 
+  // ---- webpagina openen ----
+  // Peek scant geen poorten: de knop staat bij soorten apparaten die meestal een webpagina hebben,
+  // en altijd in het detailvenster van een apparaat dat online is.
+  const WEB_ICONS = new Set(['router', 'printer', 'camera', 'server', 'hub', 'thermostat', 'airco', 'heater', 'purifier', 'fan', 'solar', 'ev', 'doorbell', 'vacuum', 'iot']);
+  const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+  function webUrl(d) { return IPV4.test(d.ip || '') ? 'http://' + d.ip : null; }
+  function openLink(d, compact) {
+    const url = d.online ? webUrl(d) : null;
+    if (!url) return null;
+    if (compact && !(WEB_ICONS.has(d.icon) || d.isGateway)) return null;
+    const a = h('a', { class: compact ? 'open' : 'btn small', href: url, target: '_blank', rel: 'noopener noreferrer', title: 'Open ' + url, 'aria-label': 'Open webpagina van ' + (d.name || d.ip) }, svg('ext'), compact ? null : 'Open webpagina');
+    return a;
+  }
+
   // ---- toestand ----
   const SORTS = ['name', 'ip', 'mac', 'vendor', 'seen'];
   const SORT_DEFAULT_DIR = { seen: -1 }; // laatst gezien: nieuwste eerst, de rest oplopend
@@ -75,6 +91,7 @@
   let query = '';
   const open = new Set();
   let pendingRender = false;
+  const saved = new Set(); // regels die net zijn opgeslagen: tonen kort een vinkje
   let pollTimer = null;
 
   try {
@@ -276,15 +293,40 @@
     } catch (e) { toast(e.message); }
   }
 
+  // Naam en notitie opslaan, de regel dichtklappen en kort een vinkje tonen
+  async function saveRow(d, name, note) {
+    const body = {};
+    if (name !== d.customName) body.name = name;
+    if (note !== d.note) body.note = note;
+    try {
+      if (Object.keys(body).length) await api('/api/devices/' + encodeURIComponent(d.mac), { method: 'PATCH', body });
+    } catch (e) { toast(e.message); return false; }
+    if (body.name !== undefined) { d.customName = body.name; d.name = body.name || d.netName; }
+    if (body.note !== undefined) d.note = body.note;
+    open.delete(d.mac);
+    saved.add(d.mac);
+    render();
+    setTimeout(() => { saved.delete(d.mac); render(); }, 1800);
+    refresh();
+    return true;
+  }
+
   function detailPanel(d) {
     const nameIn = h('input', { value: d.customName, placeholder: d.netName || 'Geef dit apparaat een naam', maxlength: '60', 'aria-label': 'Naam', autocomplete: 'off', spellcheck: 'false', 'data-focus': d.mac });
-    const saveName = () => { const v = nameIn.value.trim(); if (v !== d.customName) patch(d.mac, { name: v }); };
-    nameIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); nameIn.blur(); } if (e.key === 'Escape') { nameIn.value = d.customName; nameIn.blur(); } });
+    let saving = false;
+    const saveAll = async () => {
+      saving = true;
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      if (!(await saveRow(d, nameIn.value.trim(), note.value))) saving = false;
+    };
+    // Wie wegklikt zonder op Opslaan te drukken, verliest niets
+    const saveName = () => { if (saving) return; const v = nameIn.value.trim(); if (v !== d.customName) patch(d.mac, { name: v }, true); };
+    nameIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveAll(); } if (e.key === 'Escape') { nameIn.value = d.customName; nameIn.blur(); } });
     nameIn.addEventListener('blur', saveName);
 
     const note = h('textarea', { placeholder: 'Bijvoorbeeld: waar staat het, van wie is het', maxlength: '500', 'aria-label': 'Notitie' });
     note.value = d.note;
-    note.addEventListener('blur', () => { if (note.value !== d.note) patch(d.mac, { note: note.value }); });
+    note.addEventListener('blur', () => { if (saving) return; if (note.value !== d.note) patch(d.mac, { note: note.value }, true); });
 
     const picker = h('div', { class: 'picker', role: 'group', 'aria-label': 'Icoon' });
     for (const ic of data.icons) {
@@ -304,7 +346,9 @@
     );
 
     const actions = h('div', { class: 'detail-actions' },
+      h('button', { class: 'small primary', type: 'button', onclick: saveAll }, svg('check'), 'Opslaan'),
       h('button', { class: 'small', type: 'button', onclick: () => copy(d.mac) }, 'Kopieer MAC'),
+      openLink(d, false),
       d.ip ? h('button', { class: 'small', type: 'button', onclick: () => copy(d.ip) }, 'Kopieer IP') : null,
       d.isNew ? h('button', { class: 'small primary', type: 'button', onclick: () => patch(d.mac, { known: true }) }, 'Markeer als bekend') : null,
       (!d.online && !d.isSelf) ? h('button', { class: 'small gevaar', type: 'button', onclick: () => forget(d) }, 'Vergeet apparaat') : null,
@@ -339,7 +383,7 @@
       if (open.has(d.mac)) { const i = document.querySelector('[data-focus="' + d.mac + '"]'); if (i && matchMedia('(hover: hover)').matches) i.focus(); }
     };
 
-    const row = h('div', { class: 'row', role: 'button', tabindex: '0', 'aria-expanded': String(isOpen), onclick: (e) => { if (e.target.closest('.copy')) return; toggle(); }, onkeydown: (e) => { if (e.key === 'Enter' && e.target === row) toggle(); } },
+    const row = h('div', { class: 'row', role: 'button', tabindex: '0', 'aria-expanded': String(isOpen), onclick: (e) => { if (e.target.closest('.copy, .open')) return; toggle(); }, onkeydown: (e) => { if (e.key === 'Enter' && e.target === row) toggle(); } },
       h('div', { class: 'ico' }, svg(d.icon), h('span', { class: 'dot' })),
       h('div', { class: 'name' },
         h('div', { class: 't' + (d.name ? '' : ' noname') },
@@ -349,12 +393,12 @@
           d.isGateway ? h('span', { class: 'tag gw' }, 'Gateway') : null,
           d.isNew ? h('span', { class: 'tag new' }, 'Nieuw') : null),
         h('div', { class: 's' }, sub)),
-      h('div', { class: 'ip mono' }, d.ip || '-'),
+      h('div', { class: 'ip mono' }, d.ip || '-', openLink(d, true)),
       h('div', { class: 'mac mono copy', title: 'Klik om te kopiëren', onclick: () => copy(d.mac) }, d.mac),
       h('div', { class: 'vendor' }, vendorMark(d), h('span', { class: 'vt' }, vendorName, d.vendor && d.vendorSource === 'naam' ? h('span', { class: 'g' }, ' (op naam)') : null)),
       h('div', { class: 'seen' }, seen),
-      svg('chev', 'chev'),
-      h('div', { class: 'meta' }, h('span', { class: 'mono' }, d.ip || '-'), h('span', { class: 'm' }, vendorMark(d, true), vendorName), h('span', {}, seen)),
+      saved.has(d.mac) ? svg('check', 'chev saved') : svg('chev', 'chev'),
+      h('div', { class: 'meta' }, h('span', { class: 'mono' }, d.ip || '-', openLink(d, true)), h('span', { class: 'm' }, vendorMark(d, true), vendorName), h('span', {}, seen)),
     );
 
     return h('article', { class: 'dev' + (d.online ? ' online' : '') + (isOpen ? ' open' : ''), 'data-mac': d.mac }, row, isOpen ? detailPanel(d) : null);
