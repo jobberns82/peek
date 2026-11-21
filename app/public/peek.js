@@ -77,7 +77,7 @@
     const url = d.online ? webUrl(d) : null;
     if (!url) return null;
     if (compact && !(WEB_ICONS.has(d.icon) || d.isGateway)) return null;
-    const a = h('a', { class: compact ? 'open' : 'btn small', href: url, target: '_blank', rel: 'noopener noreferrer', title: 'Open ' + url, 'aria-label': 'Open webpagina van ' + (d.name || d.ip) }, svg('ext'), compact ? null : 'Open webpagina');
+    const a = h('a', { class: compact ? 'weblink' : 'btn small', href: url, target: '_blank', rel: 'noopener noreferrer', title: 'Open ' + url, 'aria-label': 'Open webpagina van ' + (d.name || d.ip) }, svg('ext'), compact ? null : 'Open webpagina');
     return a;
   }
 
@@ -378,12 +378,13 @@
     const seen = d.online ? 'Online' : ago(d.lastSeen);
 
     const toggle = () => {
-      if (open.has(d.mac)) open.delete(d.mac); else open.add(d.mac);
-      render();
+      const closing = open.has(d.mac);
+      if (closing) { open.delete(d.mac); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } else open.add(d.mac);
+      render(true); // inklappen mag nooit wachten op een invoerveld
       if (open.has(d.mac)) { const i = document.querySelector('[data-focus="' + d.mac + '"]'); if (i && matchMedia('(hover: hover)').matches) i.focus(); }
     };
 
-    const row = h('div', { class: 'row', role: 'button', tabindex: '0', 'aria-expanded': String(isOpen), onclick: (e) => { if (e.target.closest('.copy, .open')) return; toggle(); }, onkeydown: (e) => { if (e.key === 'Enter' && e.target === row) toggle(); } },
+    const row = h('div', { class: 'row', role: 'button', tabindex: '0', 'aria-expanded': String(isOpen), onclick: (e) => { if (e.target.closest('.copy, .weblink')) return; toggle(); }, onkeydown: (e) => { if (e.key === 'Enter' && e.target === row) toggle(); } },
       h('div', { class: 'ico' }, svg(d.icon), h('span', { class: 'dot' })),
       h('div', { class: 'name' },
         h('div', { class: 't' + (d.name ? '' : ' noname') },
@@ -440,10 +441,10 @@
     return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && $('list').contains(a);
   }
 
-  function render() {
+  function render(force) {
     if (!data) return;
     renderTop();
-    if (editing()) { pendingRender = true; return; }
+    if (!force && editing()) { pendingRender = true; return; }
     pendingRender = false;
     renderStats();
     renderList();

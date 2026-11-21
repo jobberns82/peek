@@ -1,5 +1,9 @@
 # Wijzigingen
 
+## 1.2.1 (2026-11-21)
+
+- Fix: een regel opengeklapt kon niet meer dichtgeklikt worden (door de klasse van de nieuwe open-knop). Inklappen werkt weer voor alle apparaten, op desktop en telefoon. Inklappen wacht ook niet meer op een invoerveld.
+
 ## 1.2.0 (2026-11-21)
 
 - Open-knop: bij online apparaten die meestal een webpagina hebben (router, printer, camera, server, hubs, klimaat- en smarthome-apparaten) staat een klein icoontje achter het IP-adres. In het detailvenster van elk online apparaat staat de knop Open webpagina (http://<ip>, nieuw tabblad). Peek scant hiervoor geen poorten.
