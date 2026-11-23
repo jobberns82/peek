@@ -10,7 +10,7 @@ const { createScanner } = require('./lib/scanner');
 const { createLogos } = require('./lib/logos');
 const net = require('./lib/netutil');
 
-const VERSION = '1.2.2';
+const VERSION = '1.2.3';
 const env = process.env;
 const PORT = Number(env.PORT) || 6001;
 const DATA_DIR = env.DATA_DIR || '/data';

@@ -1,5 +1,9 @@
 # Wijzigingen
 
+## 1.2.3 (2026-11-23)
+
+- Het loginvenster is op alle apps even groot, met logo en naam in het venster en de versie eronder.
+
 ## 1.2.2 (2026-11-23)
 
 - Het loginvenster is groter en staat iets boven het midden van het scherm. Logo en naam staan naast elkaar bovenin en de versie staat eronder.

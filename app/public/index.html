@@ -9,8 +9,8 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <script src="/theme.js?v=1.2.2"></script>
-  <link rel="stylesheet" href="/peek.css?v=1.2.2">
+  <script src="/theme.js?v=1.2.3"></script>
+  <link rel="stylesheet" href="/peek.css?v=1.2.3">
 </head>
 <body class="inlog">
   <svg class="sprite" width="0" height="0" aria-hidden="true">
@@ -33,7 +33,8 @@
     <!-- Inloggen -->
     <div id="loginView" hidden>
       <form id="loginForm" class="card" autocomplete="on">
-        <h2 class="kopje">Inloggen</h2>
+        <div class="titel"><svg class="logo" aria-hidden="true"><use href="#logo"/></svg><h1>PEEK</h1></div>
+        <p class="hint">Log in om verder te gaan.</p>
         <input id="loginUser" name="username" placeholder="Gebruikersnaam" autocomplete="username" autocapitalize="off" spellcheck="false" required>
         <input id="loginPass" name="password" type="password" placeholder="Wachtwoord" autocomplete="current-password" required>
         <div id="loginError" class="melding" role="alert"></div>
@@ -126,6 +127,6 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="/peek.js?v=1.2.2"></script>
+  <script src="/peek.js?v=1.2.3"></script>
 </body>
 </html>

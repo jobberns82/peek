@@ -78,7 +78,9 @@ label.vink .hint { display: block; }
 /* ---- inloggen ---- */
 /* loginvenster: ruimer en iets boven het midden van het scherm */
 body.inlog .wrap { min-height: calc(100vh - 40px); justify-content: center; padding-bottom: 12vh; }
-body.inlog .bovenrij { justify-content: center; }
+body.inlog .bovenrij { display: none; }
+#loginForm .titel { justify-content: center; margin-bottom: 4px; }
+#loginForm .hint { text-align: center; font-size: 0.85rem; }
 body.inlog .logo { width: 44px; height: 44px; }
 body.inlog .titel { gap: 14px; }
 body.inlog .titel h1 { font-size: 2rem; }

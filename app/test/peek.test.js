@@ -350,7 +350,7 @@ test('server: fabrikantlogo via eigen route, achter de login', async (t) => {
 
   assert.equal((await fetch(base + '/api/vendor-logo/apple.svg')).status, 401, 'zonder login geen logo');
   const v = await (await fetch(base + '/api/version')).json();
-  assert.equal(v.version, '1.2.2', 'versie is zonder login te zien (inlogscherm)');
+  assert.equal(v.version, '1.2.3', 'versie is zonder login te zien (inlogscherm)');
 
   const ok = await fetch(base + '/api/login', { method: 'POST', headers: J, body: JSON.stringify({ user: 'job', password: 'test-wachtwoord' }) });
   const C = { Cookie: ok.headers.get('set-cookie').split(';')[0] };
