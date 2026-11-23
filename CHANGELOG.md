@@ -1,5 +1,9 @@
 # Wijzigingen
 
+## 1.2.2 (2026-11-23)
+
+- Het loginvenster is groter en staat iets boven het midden van het scherm. Logo en naam staan naast elkaar bovenin en de versie staat eronder.
+
 ## 1.2.1 (2026-11-21)
 
 - Fix: een regel opengeklapt kon niet meer dichtgeklikt worden (door de klasse van de nieuwe open-knop). Inklappen werkt weer voor alle apparaten, op desktop en telefoon. Inklappen wacht ook niet meer op een invoerveld.

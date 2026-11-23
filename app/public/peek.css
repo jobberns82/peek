@@ -76,14 +76,16 @@ label.vink .hint { display: block; }
 .kopje { font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 
 /* ---- inloggen ---- */
-body.inlog .bovenrij { justify-content: center; margin-top: 12vh; }
+/* loginvenster: ruimer en iets boven het midden van het scherm */
+body.inlog .wrap { min-height: calc(100vh - 40px); justify-content: center; padding-bottom: 12vh; }
+body.inlog .bovenrij { justify-content: center; }
 body.inlog .logo { width: 44px; height: 44px; }
 body.inlog .titel { gap: 14px; }
 body.inlog .titel h1 { font-size: 2rem; }
-#loginForm { max-width: 380px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 12px; }
+#loginForm { width: 100%; max-width: 460px; margin: 28px auto 0; padding: 34px; display: flex; flex-direction: column; gap: 14px; }
+#loginForm input { padding: 14px; }
 #loginForm .melding { color: var(--bad); font-size: 0.9rem; min-height: 1.2em; }
-body.inlog .voetrij { max-width: 380px; width: 100%; margin: 18px auto 0; }
-body.inlog .wrap { min-height: 0; }
+body.inlog .voetrij { max-width: 460px; width: 100%; margin: 18px auto 0; }
 
 /* ---- voetrij met dagnachtknop, zoals MyPad ---- */
 .voetrij { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: auto; padding-top: 14px; font-size: 0.75rem; color: var(--muted); }
